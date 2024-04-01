@@ -1,65 +1,63 @@
+[tool.poetry]
+name = "server"
+version = "0.1.0"
+description = ""
+authors = ["SiddharthPant <spsiddharthpant@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+uvicorn = {extras = ["standard"], version = "^0.29.0"}
+fastapi = "^0.110.0"
+pydantic = "^2.6.4"
+pydantic-settings = "^2.2.1"
+alembic = "^1.13.1"
+httpx = "^0.27.0"
+psycopg = {extras = ["binary"], version = "^3.1.18"}
+sqlmodel = "^0.0.16"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.1"
+mypy = "^1.9.0"
+ruff = "^0.3.5"
+pre-commit = "^3.7.0"
+cogapp = "^3.4.1"
+
 [build-system]
-requires = ['setuptools>=61.0']
-build-backend = 'setuptools.build_meta'
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
 
-[project]
-name = 'server'
-version = '0.1.0'
-dependencies = [
-    'fastapi',
-    'uvicorn',
-    'asyncpg',
-    'sqlmodel',
-    'alembic',
-]
+[tool.isort]
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+line_length = 88
 
-[project.optional-dependencies]
-dev = [
-    'cogapp',
-    'pip-tools',
-    'ruff',
-    'ipython',
-]
-
-[tool.setuptools]
-package-dir = { '' = './' }
-include-package-data = true
+[tool.mypy]
+strict = true
+exclude = ["venv", "alembic"]
 
 [tool.ruff]
-target-version = 'py311'
-line-length = 120
-exclude = ['migrations', '.venv']
+target-version = "py310"
+exclude = ["alembic"]
 
 [tool.ruff.lint]
-select = ['ALL']
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
 ignore = [
-    'ANN101', # Missing Type Annotation for 'self'
-    'ANN401', # Dynamically typed expressions (typing.Any) are disallowed in `**kwargs`'
-    'ARG001', # Unused function argument (request, ...)
-    'ARG002', # Unused method argument (*args, **kwargs)
-    'D', # Missing or badly formatted docstrings
-    'E501', # Let the formatter handle long lines
-    'FBT', # Flake Boolean Trap (don't use arg=True in functions)
-    'RUF012', # Mutable class attributes https://github.com/astral-sh/ruff/issues/5243
-
-    'COM812', # (ruff format) Checks for the absence of trailing commas
-    'ISC001', # (ruff format) Checks for implicitly concatenated strings on a single line
-    'Q000', # (ruff format) Remove bad quotes
-    'Q003', # (ruff format) Avoidable escaped quotes
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "W191",  # indentation contains tabs
+    "B904",  # Allow raising exceptions without from e, for HTTPException
 ]
 
-[tool.ruff.lint.extend-per-file-ignores]
-# Also ignore `E402` in all `__init__.py` files.
-'test_*.py' = [
-    'S101', # S101 Use of `assert` detected
-    'PLR2004', # Magic value used in comparison,
-]
-'personal_site/settings.py' = [
-    'F403', # unable to detect undefined names
-    'F405', # may be undefined, or defined from star imports
-]
-
-[tool.ruff.format]
-# Prefer single quotes over double quotes.
-quote-style = 'single'
-docstring-code-format = true
+[tool.ruff.lint.pyupgrade]
+# Preserve types, even if a file imports `from __future__ import annotations`.
+keep-runtime-typing = true

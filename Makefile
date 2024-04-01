@@ -2,33 +2,26 @@
 .ONESHELL:
 .DEFAULT_GOAL := help
 SHELL=/bin/bash -eu -o pipefail
-VENV_BIN=.venv/bin
 
-requirements.txt: pyproject.toml  ## Generate requirements.txt from pyproject.toml
-	 $(VENV_BIN)/pip-compile -v \
-	  --resolver=backtracking \
-	  --strip-extras \
-	  --output-file=requirements.txt \
-	  pyproject.toml
-
-.PHONY: venv
-venv: pyproject.toml ## Install dev requirements in virtual env from pyproject.toml
-	$(VENV_BIN)/pip install -e .[dev] -c requirements.txt
 
 README.md: Makefile ## Update dynamic blocks in README.md
-	$(VENV_BIN)/cog -r README.md
+	poetry run cog -r README.md
+
+.PHONY: install
+install:  ## Setup environment
+	poetry install
 
 .PHONY: fmt
 fmt:  ## Format Python code
-	$(VENV_BIN)/ruff format .
+	poetry run ruff format .
 
 .PHONY: lint
 lint:  ## Lint Python code
-	$(VENV_BIN)/ruff check .
+	poetry run ruff check .
 
 .PHONY: fix
 fix:  ## Fix linting errors
-	$(VENV_BIN)/ruff check --fix .
+	poetry run ruff check --fix .
 
 .PHONY: up
 run:  ## Stand up the environment
