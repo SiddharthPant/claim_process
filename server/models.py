@@ -31,26 +31,15 @@ class TimestampModel(SQLModel):
 
 
 class ClaimBase(TimestampModel):
-    claim_data: list["ClaimData"] = Relationship(back_populates="claim")
+    pass
 
 
 class Claim(ClaimBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
+    records: list["Record"] = Relationship(back_populates="claim")
 
 
-class ClaimOut(ClaimBase):
-    id: int
-
-
-class ClaimsOut(SQLModel):
-    data: list[ClaimOut]
-    count: int
-
-
-class ClaimData(SQLModel, table=True):
-    id: int | None = Field(default=None, primary_key=True)
-    claim_id: int | None = Field(default=None, foreign_key="claim.id")
-    claim: Claim | None = Relationship(back_populates="claim_data")
+class RecordBase(SQLModel):
     service_date: datetime
     submitter_procedure: str
     quadrant: str | None = None
@@ -61,3 +50,28 @@ class ClaimData(SQLModel, table=True):
     allowed_fees: float
     member_coinsurance: float
     member_copay: float
+
+
+class Record(RecordBase, table=True):
+    id: int | None = Field(default=None, primary_key=True)
+    claim_id: int | None = Field(default=None, foreign_key="claim.id")
+    claim: Claim | None = Relationship(back_populates="records")
+
+
+class RecordOut(RecordBase):
+    id: int
+    claim_id: int
+
+
+class ClaimOut(ClaimBase):
+    id: int
+    records: list[RecordOut]
+
+
+class ClaimsOut(SQLModel):
+    data: list[ClaimOut]
+    count: int
+
+
+class ClaimCreate(ClaimBase):
+    records: list[RecordBase]

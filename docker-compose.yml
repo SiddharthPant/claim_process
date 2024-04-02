@@ -1,9 +1,12 @@
-name: claim_process
+version: '3.8'
 
 services:
 
   web:
-    build: ./
+    build:
+      context: ./
+      args:
+        INSTALL_DEV: ${INSTALL_DEV-true}
     command: uvicorn server.main:app --reload --workers 1 --host 0.0.0.0 --port 8000
     volumes:
       - ./:/app
@@ -16,7 +19,15 @@ services:
 
   db:
     image: postgres:16.2
+    restart: no
+    volumes:
+      - app-db-data:/var/lib/postgresql/data/pgdata
     expose:
       - 5432
     env_file:
       - .env
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+
+volumes:
+  app-db-data:

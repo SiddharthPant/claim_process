@@ -1,7 +1,9 @@
-from fastapi import APIRouter
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, status
 from sqlmodel import func, select
 
-from server.models import Claim, ClaimsOut
+from server.models import Claim, ClaimCreate, ClaimOut, ClaimsOut
 
 from ..deps import SessionDep
 
@@ -9,9 +11,7 @@ router = APIRouter()
 
 
 @router.get("/", response_model=ClaimsOut)
-def read_claims(
-    claim: Claim, session: SessionDep, skip: int = 0, limit: int = 100
-) -> ClaimsOut:
+def read_claims(session: SessionDep, skip: int = 0, limit: int = 100) -> ClaimsOut:
     count_statement = select(func.count()).select_from(Claim)
     count = session.exec(count_statement).one()
 
@@ -21,16 +21,20 @@ def read_claims(
     return ClaimsOut(data=claims, count=count)
 
 
-@app.get("/{claim_id}", response_model=list[Claim])
-async def read_claim(claim_id: int, session: SessionDep):
-    result = await session.get(Claim, claim_id)
-    return result.scalars().first()
+@router.get("/{claim_id}", response_model=list[ClaimOut])
+def read_claim(session: SessionDep, claim_id: int) -> ClaimOut:
+    claim = session.get(Claim, id=claim_id)
+    if not claim:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Claim not found"
+        )
+    return claim
 
 
-@app.post("/", response_model=Claim)
-async def add_claim(claim: Claim, session: AsyncSession = Depends(get_session)):
-    claim = Claim(**claim.model_dump())
+@router.post("/", response_model=ClaimOut)
+def add_claim(session: SessionDep, claim_in: ClaimCreate) -> Any:
+    claim = Claim.model_validate(claim_in)
     session.add(claim)
-    await session.commit()
-    await session.refresh(claim)
+    session.commit()
+    session.refresh(claim)
     return claim
