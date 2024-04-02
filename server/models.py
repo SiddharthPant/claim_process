@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 from pydantic import ValidationError, field_validator
 from sqlalchemy import text
@@ -39,14 +39,15 @@ class ClaimBase(SQLModel):
     pass
 
 
+def _total_net_fee(self) -> float:
+    net_fees = [record.net_fee for record in self.records]
+    return sum(net_fees)
+
+
 class Claim(TimestampModel, ClaimBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     records: list["Record"] = Relationship(back_populates="claim")
-
-    @hybrid_property
-    def total_net_fee(self) -> float:
-        net_fees = [record.net_fee for record in self.records]
-        return sum(net_fees)
+    total_net_fee: ClassVar[float] = hybrid_property(_total_net_fee)
 
 
 class RecordBase(SQLModel):
@@ -62,19 +63,21 @@ class RecordBase(SQLModel):
     member_copay: float
 
 
+def _net_fee(self) -> float:
+    return (
+        self.provider_fees
+        + self.member_coinsurance
+        + self.member_copay
+        - self.allowed_fees
+    )
+
+
 class Record(RecordBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     claim_id: int | None = Field(default=None, foreign_key="claim.id")
     claim: Claim | None = Relationship(back_populates="records")
 
-    @hybrid_property
-    def net_fee(self) -> float:
-        return (
-            self.provider_fees
-            + self.member_coinsurance
-            + self.member_copay
-            - self.allowed_fees
-        )
+    net_fee: ClassVar[float] = hybrid_property(_net_fee)
 
 
 class RecordOut(RecordBase):
@@ -91,6 +94,11 @@ class ClaimOut(ClaimBase, TimestampModel):
 class ClaimsOut(SQLModel):
     data: list[ClaimOut]
     count: int
+
+
+class NetFeeClaimOut(SQLModel):
+    id: int
+    total_net_fee: float
 
 
 # Unfortunately there is a bug currently in versions of SQLModel > 0.0.13 that prevents

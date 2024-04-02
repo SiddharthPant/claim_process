@@ -3,7 +3,14 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import func, select
 
-from server.models import Claim, ClaimCreate, ClaimOut, ClaimsOut, Record
+from server.models import (
+    Claim,
+    ClaimCreate,
+    ClaimOut,
+    ClaimsOut,
+    NetFeeClaimOut,
+    Record,
+)
 
 from ..deps import SessionDep
 
@@ -44,3 +51,10 @@ def add_claim(session: SessionDep, claim_in: ClaimCreate) -> Any:
     session.commit()
     session.refresh(new_claim)
     return new_claim
+
+
+@router.get("/top_net_fee", response_model=list[NetFeeClaimOut])
+def read_top_net_fee(session: SessionDep) -> list[NetFeeClaimOut]:
+    top_10_claims = session.query(Claim).order_by(Claim.total_net_fee).limit(10).all()
+
+    return top_10_claims
