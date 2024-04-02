@@ -1,9 +1,12 @@
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Any
 
-from pydantic import ValidationError, WrapValidator, field_validator
+from pydantic import ValidationError, field_validator
 from sqlalchemy import text
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlmodel import Field, Relationship, SQLModel
+
+from .utils import Float
 
 # class UUIDModel(SQLModel):
 #     uuid: uuid_pkg.UUID = Field(
@@ -40,6 +43,11 @@ class Claim(TimestampModel, ClaimBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     records: list["Record"] = Relationship(back_populates="claim")
 
+    @hybrid_property
+    def total_net_fee(self) -> float:
+        net_fees = [record.net_fee for record in self.records]
+        return sum(net_fees)
+
 
 class RecordBase(SQLModel):
     service_date: datetime
@@ -59,10 +67,20 @@ class Record(RecordBase, table=True):
     claim_id: int | None = Field(default=None, foreign_key="claim.id")
     claim: Claim | None = Relationship(back_populates="records")
 
+    @hybrid_property
+    def net_fee(self) -> float:
+        return (
+            self.provider_fees
+            + self.member_coinsurance
+            + self.member_copay
+            - self.allowed_fees
+        )
+
 
 class RecordOut(RecordBase):
     id: int
     claim_id: int
+    net_fee: float
 
 
 class ClaimOut(ClaimBase, TimestampModel):
@@ -73,19 +91,6 @@ class ClaimOut(ClaimBase, TimestampModel):
 class ClaimsOut(SQLModel):
     data: list[ClaimOut]
     count: int
-
-
-def validate_timestamp(v, handler):
-    if isinstance(v, str):
-        return float(v.strip().replace("$", ""))
-    try:
-        return handler(v)
-    except ValidationError:
-        # validation failed, in this case we want to return a default value
-        return 0.0
-
-
-Float = Annotated[float, WrapValidator(validate_timestamp)]
 
 
 # Unfortunately there is a bug currently in versions of SQLModel > 0.0.13 that prevents
