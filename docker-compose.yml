@@ -22,8 +22,8 @@ services:
     restart: no
     volumes:
       - app-db-data:/var/lib/postgresql/data/pgdata
-    expose:
-      - 5432
+    ports:
+      - "5432:5432"
     env_file:
       - .env
     environment:

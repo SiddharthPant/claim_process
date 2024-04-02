@@ -1,5 +1,7 @@
 from datetime import datetime
+from typing import Annotated, Any
 
+from pydantic import ValidationError, WrapValidator, field_validator
 from sqlalchemy import text
 from sqlmodel import Field, Relationship, SQLModel
 
@@ -30,22 +32,22 @@ class TimestampModel(SQLModel):
     )
 
 
-class ClaimBase(TimestampModel):
+class ClaimBase(SQLModel):
     pass
 
 
-class Claim(ClaimBase, table=True):
+class Claim(TimestampModel, ClaimBase, table=True):
     id: int | None = Field(default=None, primary_key=True)
     records: list["Record"] = Relationship(back_populates="claim")
 
 
 class RecordBase(SQLModel):
     service_date: datetime
-    submitter_procedure: str
+    submitted_procedure: str
     quadrant: str | None = None
     group_plan: str
-    subscriber_id: int = Field(index=True)
-    provider_npi: int
+    subscriber_id: str = Field(index=True)
+    provider_npi: str
     provider_fees: float
     allowed_fees: float
     member_coinsurance: float
@@ -63,7 +65,7 @@ class RecordOut(RecordBase):
     claim_id: int
 
 
-class ClaimOut(ClaimBase):
+class ClaimOut(ClaimBase, TimestampModel):
     id: int
     records: list[RecordOut]
 
@@ -73,5 +75,32 @@ class ClaimsOut(SQLModel):
     count: int
 
 
+def validate_timestamp(v, handler):
+    if isinstance(v, str):
+        return float(v.strip().replace("$", ""))
+    try:
+        return handler(v)
+    except ValidationError:
+        # validation failed, in this case we want to return a default value
+        return 0.0
+
+
+Float = Annotated[float, WrapValidator(validate_timestamp)]
+
+
+class RecordIn(RecordBase):
+    provider_fees: Float
+    allowed_fees: Float
+    member_coinsurance: Float
+    member_copay: Float
+
+    @field_validator("service_date", mode="before")
+    @classmethod
+    def string_to_date(cls, v: Any):
+        if isinstance(v, str):
+            return datetime.strptime(v, "%m/%d/%y %H:%M")
+        return v
+
+
 class ClaimCreate(ClaimBase):
-    records: list[RecordBase]
+    records: list[RecordIn]

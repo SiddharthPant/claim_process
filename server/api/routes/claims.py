@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, status
 from sqlmodel import func, select
 
-from server.models import Claim, ClaimCreate, ClaimOut, ClaimsOut
+from server.models import Claim, ClaimCreate, ClaimOut, ClaimsOut, Record
 
 from ..deps import SessionDep
 
@@ -31,10 +31,16 @@ def read_claim(session: SessionDep, claim_id: int) -> ClaimOut:
     return claim
 
 
-@router.post("/", response_model=ClaimOut)
+@router.post("/", response_model=ClaimOut, status_code=status.HTTP_201_CREATED)
 def add_claim(session: SessionDep, claim_in: ClaimCreate) -> Any:
-    claim = Claim.model_validate(claim_in)
-    session.add(claim)
+    new_claim = Claim()
+    session.add(new_claim)
     session.commit()
-    session.refresh(claim)
-    return claim
+    session.refresh(new_claim)
+    records = [
+        Record(**record.model_dump(), claim=new_claim) for record in claim_in.records
+    ]
+    session.add_all(records)
+    session.commit()
+    session.refresh(new_claim)
+    return new_claim
