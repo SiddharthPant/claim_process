@@ -117,6 +117,27 @@ class RecordIn(RecordBase):
             return datetime.strptime(v, "%m/%d/%y %H:%M")
         return v
 
+    @field_validator("provider_npi", mode="before")
+    @classmethod
+    def validate_provider_npi(cls, v: Any):
+        if not isinstance(v, str):
+            raise ValidationError("provider_npi must be a string")
+        if len(v) != 10:
+            raise ValidationError("provider_npi must be 10 characters long")
+
+        if v.isdigit():
+            raise ValidationError("provider_npi string must contain only numbers")
+        return v
+
+    @field_validator("submitted_procedure", mode="before")
+    @classmethod
+    def validate_submitted_procedure(cls, v: Any):
+        if not isinstance(v, str):
+            raise ValidationError("submitted_procedure must be a string")
+        if not v.startswith("D"):
+            raise ValidationError("submitted_procedure must start with letter D")
+        return v
+
 
 class ClaimCreate(ClaimBase):
     records: list[RecordIn]
