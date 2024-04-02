@@ -31,6 +31,32 @@ The following features have been implemented:
 * Used a production ready dir structure for the project that is flexible and can be easily expanded
 * Used pydantic_settings package to support 12-factor app methodology for maintaining env vars
 
+## Sample endpoint that API will accept for `POST /claims`
+for explanation on keys please go to above shared link:
+```bash
+curl -X 'POST' \
+  'http://localhost:8000/api/v1/claims/' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/json' \
+  -d '{
+  "records": [
+    {
+      "allowed_fees": "$100.00 ",
+      "member_coinsurance": "$0.00 ",
+      "member_copay": "$0.00 ",
+      "group_plan": "GRP-1000",
+      "provider_fees": "$100.00 ",
+      "provider_npi": "1497775530",
+      "quadrant": "",
+      "service_date": "3\/28\/18 0:00",
+      "submitted_procedure": "D0180",
+      "subscriber_id": "3730189502"
+    }
+  ]
+}'
+
+```
+
 ## Makefile commands
 
 <!-- [[[cog
